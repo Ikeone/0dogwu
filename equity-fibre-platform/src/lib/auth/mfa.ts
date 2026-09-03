@@ -19,7 +19,7 @@ export interface EnrollmentStart {
 /** Begin enrolment: returns a secret + otpauth URL (for a QR code). */
 export function startEnrollment(email: string): EnrollmentStart {
   const secret = authenticator.generateSecret();
-  const otpauthUrl = authenticator.keyuri(email, "WN Equity Fibre", secret);
+  const otpauthUrl = authenticator.keyuri(email, "WN Stride Broadband", secret);
   return { secret, otpauthUrl };
 }
 

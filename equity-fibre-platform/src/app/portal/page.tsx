@@ -50,7 +50,7 @@ export default async function PortalPage() {
       </div>
 
       <div className="container-page py-8">
-        <h1 className="text-2xl font-bold text-ink">Your Equity Fibre</h1>
+        <h1 className="text-2xl font-bold text-ink">Your Stride Broadband</h1>
         <p className="mt-1 text-ink-faint">Track your application, modem, and connection.</p>
 
         {!application ? (

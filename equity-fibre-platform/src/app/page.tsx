@@ -21,7 +21,7 @@ export default async function LandingPage() {
   ];
 
   const faqs = [
-    { q: "Is this free?", a: "No. Equity Fibre is a low-cost plan — up to $30 per month — for eligible households, plus a one-off upfront modem contribution." },
+    { q: "Is this free?", a: "No. Stride Broadband is a low-cost plan — up to $30 per month — for eligible households, plus a one-off upfront modem contribution." },
     { q: "Who can apply?", a: "Homes that already have a Chorus fibre box (ONT) that has been inactive for at least three months, and that meet an approved household category with approved low-income evidence. Final criteria are being confirmed." },
     { q: "When does billing start?", a: "Monthly billing begins only once your fibre service is activated — not when your modem is delivered." },
     { q: "What if a payment fails?", a: "A single failed monthly payment does not disconnect you. You get a grace period to update your payment method." },

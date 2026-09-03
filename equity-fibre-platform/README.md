@@ -1,6 +1,6 @@
-# Wireless Nation — Equity Fibre Automation Platform (Demo)
+# Wireless Nation — Stride Broadband Automation Platform (Demo)
 
-A genuinely working, end-to-end **demonstration** of an automation platform for Wireless Nation's proposed **Equity Fibre** service: a low-cost fibre plan for eligible households. It shows the full customer journey (eligibility → evidence → payment → modem → provisioning → activation → billing → support) and the full staff journey (review → provisioning ops → inventory → payments → support → config → audit → metrics).
+A genuinely working, end-to-end **demonstration** of an automation platform for Wireless Nation's proposed **Stride Broadband** service (built on the Chorus Equity Fibre wholesale programme): a low-cost fibre plan for eligible households. It shows the full customer journey (eligibility → evidence → payment → modem → provisioning → activation → billing → support) and the full staff journey (review → provisioning ops → inventory → payments → support → config → audit → metrics).
 
 > **This is a demo with clearly-labelled mock integrations.** It is not production-ready and is not connected to any real Chorus, payment, courier, SMS, email or AI provider. Every screen shows a **“DEMO — SYNTHETIC DATA”** banner. See [What is mocked](#what-is-mocked-vs-implemented).
 

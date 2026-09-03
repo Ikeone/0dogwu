@@ -87,7 +87,7 @@ export interface BusinessConfig {
  */
 export const DEFAULT_BUSINESS_CONFIG: BusinessConfig = {
   plan: {
-    name: "Equity Fibre 100",
+    name: "Stride Broadband 100",
     code: "EQUITY_FIBRE_100",
     downloadMbps: 100,
     uploadMbps: 20,

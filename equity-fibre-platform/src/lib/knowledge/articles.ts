@@ -15,20 +15,20 @@ export interface SeedArticle {
 export const KNOWLEDGE_ARTICLES: SeedArticle[] = [
   {
     slug: "what-is-equity-fibre",
-    title: "What is Equity Fibre?",
-    body: "Equity Fibre is a low-cost home fibre broadband plan for eligible households. It offers 100 Mbps download and 20 Mbps upload for up to $30 per month. Eligibility conditions apply, and an upfront modem contribution may be required.",
+    title: "What is Stride Broadband?",
+    body: "Stride Broadband is a low-cost home fibre broadband plan for eligible households. It offers 100 Mbps download and 20 Mbps upload for up to $30 per month. Eligibility conditions apply, and an upfront modem contribution may be required.",
     tags: ["overview", "plan", "about", "equity", "fibre"],
   },
   {
     slug: "who-can-qualify",
-    title: "Who may qualify for Equity Fibre?",
+    title: "Who may qualify for Stride Broadband?",
     body: "To qualify, your address must already have a Chorus fibre box (ONT) installed, and the fibre must have been inactive for at least three months. Your household also needs to meet an approved category (such as public or community housing) and provide approved low-income evidence such as a Community Services Card. The exact launch criteria are being confirmed.",
     tags: ["eligibility", "qualify", "criteria", "housing", "evidence"],
   },
   {
     slug: "inactivity-requirement",
     title: "Why can an address fail the three-month inactivity check?",
-    body: "Equity Fibre is intended for homes that have not had an active fibre connection recently. If your address has had fibre broadband switched on within the last three months, it will not currently qualify. This is checked against network records.",
+    body: "Stride Broadband is intended for homes that have not had an active fibre connection recently. If your address has had fibre broadband switched on within the last three months, it will not currently qualify. This is checked against network records.",
     tags: ["eligibility", "inactivity", "three months", "active", "address"],
   },
   {
@@ -45,7 +45,7 @@ export const KNOWLEDGE_ARTICLES: SeedArticle[] = [
   },
   {
     slug: "how-much-it-costs",
-    title: "How much does Equity Fibre cost?",
+    title: "How much does Stride Broadband cost?",
     body: "The monthly price is up to $30 (this working figure includes GST). There is also a one-off upfront modem contribution. The upfront amount is shown clearly before you pay. Monthly billing only starts once your fibre service is activated — not when your modem is delivered.",
     tags: ["cost", "price", "monthly", "modem", "payment", "gst"],
   },

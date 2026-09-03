@@ -232,7 +232,7 @@ export default function EligibilityWizard() {
                 <div className="mt-4 space-y-3">
                   <label className="flex items-start gap-3 rounded-xl border border-slate-200 p-3">
                     <input type="checkbox" checked={serviceConsent} onChange={(e) => setServiceConsent(e.target.checked)} className="mt-1" />
-                    <span className="text-sm text-ink-soft"><strong className="text-ink">Required.</strong> I consent to {`${cfg?.plan.name ?? "Equity Fibre"}`} collecting and using my information to assess eligibility and provide the service. (Policy v1.0-demo)</span>
+                    <span className="text-sm text-ink-soft"><strong className="text-ink">Required.</strong> I consent to {`${cfg?.plan.name ?? "Stride Broadband"}`} collecting and using my information to assess eligibility and provide the service. (Policy v1.0-demo)</span>
                   </label>
                   <label className="flex items-start gap-3 rounded-xl border border-slate-200 p-3">
                     <input type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} className="mt-1" />

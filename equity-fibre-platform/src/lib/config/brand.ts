@@ -5,9 +5,9 @@
  */
 export const BRAND = {
   companyName: "Wireless Nation",
-  productName: "Equity Fibre",
+  productName: "Stride Broadband",
   // Text-based logo placeholder; swap for an <Image> when a logo is provided.
-  wordmark: "Equity Fibre",
+  wordmark: "Stride Broadband",
   tagline: "Affordable fibre for eligible households",
   supportEmail: "help@equityfibre.example.nz",
   supportPhone: "0800 000 000 (demo)",

@@ -84,7 +84,7 @@ export function evaluateEligibility(
     results.push({
       ruleCode: "DUPLICATE_ACTIVE_SERVICE",
       outcome: "fail",
-      reason: "An active Equity Fibre service or application already exists at this address.",
+      reason: "An active Stride Broadband service or application already exists at this address.",
     });
   }
 
