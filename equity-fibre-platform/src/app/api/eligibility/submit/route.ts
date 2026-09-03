@@ -44,8 +44,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Service consent is required." }, { status: 400 });
   }
 
-  const file = form.get("evidence");
-  const hasFile = file instanceof File && file.size > 0;
+  const fileEntry = form.get("evidence");
+  const uploaded = fileEntry instanceof File && fileEntry.size > 0 ? fileEntry : null;
+  const hasFile = uploaded !== null;
 
   const user = await getSessionUser();
   try {
@@ -68,9 +69,9 @@ export async function POST(req: Request) {
       ip,
     });
 
-    if (hasFile) {
-      const bytes = Buffer.from(await (file as File).arrayBuffer());
-      await storeEvidence(result.applicationId, f.evidenceType, (file as File).name, bytes);
+    if (uploaded) {
+      const bytes = Buffer.from(await uploaded.arrayBuffer());
+      await storeEvidence(result.applicationId, f.evidenceType, uploaded.name, bytes);
     }
 
     return NextResponse.json({

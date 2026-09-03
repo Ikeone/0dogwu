@@ -162,7 +162,7 @@ export default function EligibilityWizard() {
                 <div className="mt-4 flex gap-2">
                   <input className="input" value={query} placeholder="e.g. 12 Rimu Lane"
                     onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") doSearch(); }} />
+                    onKeyDown={(e) => { if (e.key === "Enter") void doSearch(); }} />
                   <button className="btn-primary" onClick={doSearch} disabled={query.trim().length < 3 || searching}>
                     {searching ? "Searching…" : "Search"}
                   </button>

@@ -129,7 +129,7 @@ export default function SupportPage() {
               <div className="flex gap-2">
                 <input className="input" value={input} placeholder="Type your question…"
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") ask(input); }} />
+                  onKeyDown={(e) => { if (e.key === "Enter") void ask(input); }} />
                 <button className="btn-primary" onClick={() => ask(input)} disabled={busy || !input.trim()}>Send</button>
               </div>
             </div>

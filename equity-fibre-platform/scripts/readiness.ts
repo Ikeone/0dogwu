@@ -9,15 +9,16 @@
  */
 import { evaluateModePolicy, type ModeEnvLike } from "../src/lib/config/mode";
 
-type Target = "pilot" | "production";
+type Target = "staging" | "pilot" | "production";
 
 const target = (process.argv[2] ?? "").toLowerCase() as Target;
-if (target !== "pilot" && target !== "production") {
-  console.error("Usage: tsx scripts/readiness.ts <pilot|production>");
+if (target !== "staging" && target !== "pilot" && target !== "production") {
+  console.error("Usage: tsx scripts/readiness.ts <staging|pilot|production>");
   process.exit(2);
 }
 
 const env = process.env as ModeEnvLike & Record<string, string | undefined>;
+// Staging & pilot forbid mocks (evaluated as PILOT); production is strictest.
 const systemMode = target === "production" ? "PRODUCTION" : "PILOT";
 
 const failures: string[] = [];
@@ -43,14 +44,17 @@ check("DB-010", !(env.DATABASE_URL ?? "file:").startsWith("file:"), "DATABASE_UR
 // 4) DEMO disabled.
 check("MODE-010", (env.DEMO_MODE ?? "true").toLowerCase() !== "true", "DEMO_MODE is false");
 
+// Business/compliance gates apply to pilot & production (not pre-pilot staging).
+const businessGates = target !== "staging";
+
 // 5) Staff MFA enforced.
-check("SEC-020", (env.STAFF_MFA_REQUIRED ?? "").toLowerCase() === "true", "STAFF_MFA_REQUIRED=true");
+if (businessGates) check("SEC-020", (env.STAFF_MFA_REQUIRED ?? "").toLowerCase() === "true", "STAFF_MFA_REQUIRED=true");
 
 // 6) Approved, effective eligibility rule set.
-check("ELIG-010", (env.ELIGIBILITY_RULESET_STATUS ?? "").toUpperCase() === "APPROVED", "eligibility rule set is APPROVED");
+if (businessGates) check("ELIG-010", (env.ELIGIBILITY_RULESET_STATUS ?? "").toUpperCase() === "APPROVED", "eligibility rule set is APPROVED");
 
 // 7) Approved evidence retention policy (required if evidence is collected).
-check("PRIV-010", (env.EVIDENCE_RETENTION_APPROVED ?? "").toLowerCase() === "true", "evidence retention policy is approved");
+if (businessGates) check("PRIV-010", (env.EVIDENCE_RETENTION_APPROVED ?? "").toLowerCase() === "true", "evidence retention policy is approved");
 
 // 8) Object storage is real (not local disk).
 check("SEC-012", (env.STORAGE_MODE ?? "").toUpperCase() === "PRODUCTION" || (env.STORAGE_MODE ?? "").toUpperCase() === "SANDBOX", "object storage is not local disk");

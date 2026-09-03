@@ -5,7 +5,7 @@
   "description": "Wireless Nation Equity Fibre automation platform (demo). Modular monolith: Next.js web + background worker.",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22 <25"
   },
   "scripts": {
     "dev": "next dev",
@@ -19,11 +19,17 @@
     "demo": "npm run db:reset && next dev",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "readiness:staging": "tsx scripts/readiness.ts staging",
     "readiness:pilot": "tsx scripts/readiness.ts pilot",
     "readiness:production": "tsx scripts/readiness.ts production",
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:security": "vitest run tests/integration/security.test.ts tests/unit/redaction.test.ts",
+    "test:a11y": "playwright test tests/e2e/a11y.spec.ts",
+    "test:load": "k6 run tests/load/smoke.js",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
@@ -36,6 +42,7 @@
     "zod": "3.24.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
     "@playwright/test": "1.49.1",
     "@types/node": "22.10.7",
     "@types/react": "19.0.7",
