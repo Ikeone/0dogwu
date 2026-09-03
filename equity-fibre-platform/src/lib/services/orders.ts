@@ -6,6 +6,7 @@
 import { prisma } from "@/lib/db";
 import { assertTransition } from "@/lib/domain/stateMachine";
 import { ORDER_TRANSITIONS, type OrderState } from "@/lib/domain/orderState";
+import { DEVICE_TRANSITIONS, type DeviceState } from "@/lib/domain/deviceState";
 import {
   SUBSCRIPTION_TRANSITIONS,
   type SubscriptionState,
@@ -218,14 +219,14 @@ export async function activateService(orderId: string, actorLabel: string) {
   // Device DELIVERED -> ASSIGNED -> ACTIVE at activation (installed & live).
   if (order.assignment) {
     const { transitionDevice } = await import("./modems");
-    const { DEVICE_TRANSITIONS } = await import("@/lib/domain/deviceState");
     const device = await prisma.modemDevice.findUnique({ where: { id: order.assignment.deviceId } });
     if (device) {
       if (device.status === "DELIVERED") {
         await transitionDevice(order.assignment.deviceId, "ASSIGNED", actorLabel, "Modem installed");
       }
       const refreshed = await prisma.modemDevice.findUniqueOrThrow({ where: { id: order.assignment.deviceId } });
-      if (DEVICE_TRANSITIONS[refreshed.status as never]?.includes("ACTIVE" as never)) {
+      const allowed = DEVICE_TRANSITIONS[refreshed.status as DeviceState] ?? [];
+      if (allowed.includes("ACTIVE")) {
         await transitionDevice(order.assignment.deviceId, "ACTIVE", actorLabel, "Service activated");
       }
     }
