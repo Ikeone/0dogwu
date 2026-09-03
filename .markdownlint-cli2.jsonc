@@ -1,0 +1,15 @@
+{
+  // Config for markdownlint-cli2. GitHub profile READMEs are short and
+  // intentionally break a few strict rules, so relax the noisy ones.
+  "config": {
+    "default": true,
+    // Profile bullet lines are long single sentences; don't cap line length.
+    "MD013": false,
+    // Allow the emoji-led bullet points that GitHub profiles use.
+    "MD033": false,
+    // First line is a bullet list, not a top-level heading.
+    "MD041": false
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules"]
+}

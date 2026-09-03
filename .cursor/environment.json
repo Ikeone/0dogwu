@@ -1,0 +1,11 @@
+{
+  "name": "0dogwu profile",
+  "install": "npm install",
+  "terminals": [
+    {
+      "name": "preview",
+      "command": "npm run preview"
+    }
+  ],
+  "ports": [3000]
+}
