@@ -1,0 +1,16 @@
+{
+  "name": "0dogwu-profile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Development tooling for the @0dogwu GitHub profile README",
+  "type": "module",
+  "scripts": {
+    "lint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\"",
+    "preview": "node scripts/preview.mjs"
+  },
+  "devDependencies": {
+    "markdown-it": "^14.1.0",
+    "markdown-it-emoji": "^3.0.0",
+    "markdownlint-cli2": "^0.14.0"
+  }
+}
