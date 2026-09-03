@@ -9,7 +9,7 @@ This is a **demo**. The following are deliberately simplified or not implemented
 - **Database**: SQLite for the demo. Use managed Postgres with TLS, backups, PITR, and least-privilege credentials.
 - **Rate limiting**: in-memory per-process. Use a shared store (Redis) + edge/WAF rate limiting.
 - **Secrets**: `.env` files locally. Use a cloud secrets manager + rotation.
-- **CSP**: allows `'unsafe-inline'` for styles (Tailwind/Next). Tighten with nonces/hashes where feasible.
+- **CSP**: allows `'unsafe-inline'` for **scripts and styles**. Next.js App Router streams RSC via inline scripts; a per-request nonce with `'strict-dynamic'` requires *fully dynamic rendering* and broke statically-generated pages (blank page on direct navigation), so it was reverted (see `docs/DECISIONS.md` D8). Follow-up: force all interactive routes dynamic and reintroduce a nonce/hash CSP, verified in a browser. Non-script protections remain strict (`object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, `X-Frame-Options: DENY`, HSTS).
 - **Encryption key management**: `FIELD_ENCRYPTION_KEY` derives the evidence key. Use a KMS; plan key rotation + re-encryption.
 - **Bot protection**: CAPTCHA hook present but disabled.
 - **Dependency scanning / SAST**: not wired into CI in this repo.

@@ -20,5 +20,8 @@ Automatic suspension is **blocked** by any active hold (hardship, dispute, compl
 ## D6 — Proration policy: unconfirmed, configurable
 No proration rule is invented. It is configurable and marked **unconfirmed** until WN supplies the rule.
 
+## D8 — CSP: allow inline scripts (nonce approach reverted)
+A per-request nonce CSP with `'strict-dynamic'` was trialled. It **broke the app**: Next.js App Router streams RSC via inline `<script>` tags, and nonces only work with fully dynamic rendering, so statically-generated pages (`/login`, `/register`, `/support`, `/eligibility`) showed a **blank page on direct navigation** (browser blocked the inline scripts). This also caused the user-reported "sign in doesn't work". **Decision:** production `script-src` allows `'self' 'unsafe-inline'` so the app reliably hydrates. Non-script protections stay strict (`object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, `X-Frame-Options: DENY`, HSTS). A proper nonce/hash CSP (with all interactive routes forced dynamic, verified in a browser) is a documented follow-up in `docs/SECURITY_LIMITATIONS.md`. Verified fixed via browser test (no blank pages, no CSP console errors, sign-in works).
+
 ## D7 — Reference payment provider: Stripe (test mode) interface only
 Where WN's provider is unknown, the interface stays provider-neutral; a Stripe test-mode adapter is the documented reference. No provider is wired live (BLOCKED_EXTERNAL PAY-001).

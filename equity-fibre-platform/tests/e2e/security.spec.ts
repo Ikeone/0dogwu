@@ -23,11 +23,14 @@ test("provider secrets are not exposed via public config", async ({ request }) =
   expect(body).not.toMatch(/secret|client_secret|api_key|AUTH_SECRET/i);
 });
 
-test("security headers: nonce CSP without unsafe-inline scripts + core headers", async ({ request }) => {
+test("security headers: CSP present + core protections", async ({ request }) => {
   const res = await request.get("/");
   const csp = res.headers()["content-security-policy"] ?? "";
-  expect(csp).toMatch(/script-src[^;]*'nonce-/);
-  expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+  expect(csp).toMatch(/script-src[^;]*'self'/);
+  // Non-script protections remain strict.
+  expect(csp).toContain("object-src 'none'");
+  expect(csp).toContain("frame-ancestors 'none'");
+  expect(csp).toContain("form-action 'self'");
   expect(res.headers()["x-frame-options"]).toBe("DENY");
   expect(res.headers()["x-content-type-options"]).toBe("nosniff");
   expect(res.headers()["strict-transport-security"]).toContain("max-age=");

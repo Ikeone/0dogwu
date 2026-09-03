@@ -1,100 +1,143 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Wordmark } from "@/components/Brand";
 import { Card } from "@/components/ui";
 
-const STAFF = [
-  { email: "admin@wn.demo", label: "Super Admin", desc: "Full access" },
-  { email: "ops@wn.demo", label: "Operations", desc: "Applications, provisioning, inventory" },
-  { email: "support@wn.demo", label: "Support", desc: "Tickets & knowledge base" },
-  { email: "finance@wn.demo", label: "Finance", desc: "Payments & refunds" },
-  { email: "privacy@wn.demo", label: "Privacy Officer", desc: "Evidence & privacy requests" },
+const DEMO_STAFF = [
+  { email: "admin@wn.demo", label: "Super Admin" },
+  { email: "ops@wn.demo", label: "Operations" },
+  { email: "support@wn.demo", label: "Support" },
+  { email: "finance@wn.demo", label: "Finance" },
+  { email: "privacy@wn.demo", label: "Privacy Officer" },
 ];
-
-const CUSTOMERS = [
-  { email: "aroha.customer@demo.nz", label: "Aroha (A)", desc: "Active service" },
-  { email: "grace.customer@demo.nz", label: "Grace (G)", desc: "Payment in grace period" },
-  { email: "finn.customer@demo.nz", label: "Finn (F)", desc: "Provisioning retried" },
+const DEMO_CUSTOMERS = [
+  { email: "aroha.customer@demo.nz", label: "Aroha — active service" },
+  { email: "grace.customer@demo.nz", label: "Grace — payment in grace" },
+  { email: "finn.customer@demo.nz", label: "Finn — provisioning retried" },
 ];
 
 export default function LoginPage() {
   const router = useRouter();
-  const [busy, setBusy] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [demoBusy, setDemoBusy] = useState<string | null>(null);
+  const [showDemo, setShowDemo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function demoLogin(email: string) {
-    setBusy(email);
+  function go(isStaff: boolean) {
+    router.push(isStaff ? "/admin" : "/portal");
+    router.refresh();
+  }
+
+  async function signIn(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Sign in failed");
+      go(Boolean(data.isStaff));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign in failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function demoLogin(demoEmail: string) {
+    setDemoBusy(demoEmail);
     setError(null);
     try {
       const res = await fetch("/api/auth/demo-login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: demoEmail }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Login failed");
-      router.push(data.isStaff ? "/admin" : "/portal");
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Login failed");
+      if (!res.ok) throw new Error(data.error ?? "Demo login unavailable");
+      go(Boolean(data.isStaff));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo login failed");
     } finally {
-      setBusy(null);
+      setDemoBusy(null);
     }
   }
 
   return (
     <div className="min-h-screen">
       <div className="container-page py-10">
-        <Wordmark />
-        <div className="mx-auto mt-8 grid max-w-4xl gap-6 lg:grid-cols-2">
-          <Card>
-            <h1 className="text-xl font-semibold text-ink">Staff console</h1>
-            <p className="mt-1 text-sm text-ink-faint">One-click demo sign in. Roles enforce what each person can do.</p>
-            <div className="mt-4 space-y-2">
-              {STAFF.map((s) => (
-                <button
-                  key={s.email}
-                  onClick={() => demoLogin(s.email)}
-                  disabled={busy !== null}
-                  className="flex w-full items-center justify-between rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50"
-                >
-                  <span>
-                    <span className="font-medium text-ink">{s.label}</span>
-                    <span className="block text-xs text-ink-faint">{s.desc}</span>
-                  </span>
-                  <span className="text-xs font-semibold text-brand-700">{busy === s.email ? "…" : "Sign in"}</span>
-                </button>
-              ))}
-            </div>
-          </Card>
+        <div className="flex items-center justify-between">
+          <Wordmark />
+          <Link href="/" className="text-sm text-ink-faint hover:text-ink">Home</Link>
+        </div>
 
+        <div className="mx-auto mt-10 max-w-md">
           <Card>
-            <h1 className="text-xl font-semibold text-ink">Customer portal</h1>
-            <p className="mt-1 text-sm text-ink-faint">Sign in as a demo customer to see their portal.</p>
-            <div className="mt-4 space-y-2">
-              {CUSTOMERS.map((c) => (
-                <button
-                  key={c.email}
-                  onClick={() => demoLogin(c.email)}
-                  disabled={busy !== null}
-                  className="flex w-full items-center justify-between rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50"
-                >
-                  <span>
-                    <span className="font-medium text-ink">{c.label}</span>
-                    <span className="block text-xs text-ink-faint">{c.desc}</span>
-                  </span>
-                  <span className="text-xs font-semibold text-brand-700">{busy === c.email ? "…" : "Sign in"}</span>
-                </button>
-              ))}
-            </div>
-            <p className="mt-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
-              Demo accounts only. All data is synthetic. Password for all demo accounts is <code>demo1234</code>.
+            <h1 className="text-xl font-semibold text-ink">Sign in</h1>
+            <p className="mt-1 text-sm text-ink-faint">Welcome back. Enter your email and password.</p>
+            <form className="mt-5 space-y-3" onSubmit={signIn}>
+              <div>
+                <label className="label" htmlFor="email">Email</label>
+                <input id="email" className="input" type="email" autoComplete="email" required
+                  value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.nz" />
+              </div>
+              <div>
+                <label className="label" htmlFor="password">Password</label>
+                <input id="password" className="input" type="password" autoComplete="current-password" required
+                  value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" />
+              </div>
+              {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+              <button className="btn-primary w-full" type="submit" disabled={busy || !email || !password}>
+                {busy ? "Signing in…" : "Sign in"}
+              </button>
+            </form>
+            <p className="mt-4 text-center text-sm text-ink-faint">
+              New here? <Link href="/register" className="font-semibold text-brand-700 hover:underline">Create an account</Link>
             </p>
           </Card>
+
+          {/* Demo quick-login (works while DEMO_MODE is on). */}
+          <div className="mt-4 text-center">
+            <button className="text-xs text-ink-faint underline hover:text-ink" onClick={() => setShowDemo((v) => !v)}>
+              {showDemo ? "Hide demo accounts" : "Explore with a demo account"}
+            </button>
+          </div>
+          {showDemo ? (
+            <Card className="mt-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Demo customers</div>
+              <div className="mt-2 space-y-1.5">
+                {DEMO_CUSTOMERS.map((c) => (
+                  <button key={c.email} onClick={() => demoLogin(c.email)} disabled={demoBusy !== null}
+                    className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-2.5 text-left text-sm hover:bg-slate-50">
+                    <span className="text-ink">{c.label}</span>
+                    <span className="text-xs font-semibold text-brand-700">{demoBusy === c.email ? "…" : "Sign in"}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 text-xs font-semibold uppercase tracking-wide text-ink-faint">Demo staff</div>
+              <div className="mt-2 grid grid-cols-2 gap-1.5">
+                {DEMO_STAFF.map((s) => (
+                  <button key={s.email} onClick={() => demoLogin(s.email)} disabled={demoBusy !== null}
+                    className="rounded-lg border border-slate-200 p-2 text-left text-xs hover:bg-slate-50">
+                    <span className="font-medium text-ink">{s.label}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800">
+                Demo accounts use synthetic data. Password for all demo accounts is <code>demo1234</code> (you can also sign in with them via the form above).
+              </p>
+            </Card>
+          ) : null}
         </div>
-        {error ? <p className="mx-auto mt-4 max-w-4xl text-sm text-rose-600">{error}</p> : null}
       </div>
     </div>
   );
