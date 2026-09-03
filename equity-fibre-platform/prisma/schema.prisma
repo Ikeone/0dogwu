@@ -1,0 +1,531 @@
+// Wireless Nation Equity Fibre — data model.
+//
+// DEMO persistence: SQLite (file DB) so the demo runs with zero infra.
+// PRODUCTION: switch `provider` to "postgresql" and DATABASE_URL to a managed
+// Postgres instance, then use `prisma migrate` (see docs/DEPLOYMENT.md).
+//
+// SQLite has no native enums/arrays. Enum-like fields are stored as String and
+// validated by the domain layer (src/lib/domain/*). List fields are JSON strings.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Identity & organisation
+// ---------------------------------------------------------------------------
+
+model Organisation {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  users     User[]
+}
+
+model User {
+  id             String          @id @default(uuid())
+  organisationId String?
+  organisation   Organisation?   @relation(fields: [organisationId], references: [id])
+  email          String          @unique
+  displayName    String
+  // Space-separated staff roles (see src/lib/auth/rbac.ts). Empty for customers.
+  roles          String          @default("")
+  isStaff        Boolean         @default(false)
+  passwordHash   String?
+  mfaEnrolled    Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  disabledAt     DateTime?
+
+  customerProfile CustomerProfile?
+  staffProfile    StaffProfile?
+  sessions        Session[]
+  applications    EligibilityApplication[]
+  conversations   SupportConversation[]
+  notifications   CustomerNotification[]
+}
+
+model CustomerProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  fullName    String
+  phone       String?
+  contactPref String   @default("email") // email | sms | both
+  marketingOptIn Boolean @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model StaffProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  jobTitle  String
+  offshore  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  tokenHash  String   @unique
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  lastSeenAt DateTime @default(now())
+  ip         String?
+}
+
+// ---------------------------------------------------------------------------
+// Leads & referrals
+// ---------------------------------------------------------------------------
+
+model ReferralSource {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  label     String
+  channel   String // direct | chorus | community | school
+  createdAt DateTime @default(now())
+  leads     Lead[]
+}
+
+model Lead {
+  id               String          @id @default(uuid())
+  referralSourceId String?
+  referralSource   ReferralSource? @relation(fields: [referralSourceId], references: [id])
+  source           String // direct | chorus_referral | community
+  legalBasis       String?
+  notified         Boolean         @default(false)
+  notifiedAt       DateTime?
+  suppressed       Boolean         @default(false)
+  receivedAt       DateTime        @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Address & eligibility
+// ---------------------------------------------------------------------------
+
+model Address {
+  id            String   @id @default(uuid())
+  line1         String
+  suburb        String
+  city          String
+  postcode      String
+  // Provider place identifier (mock in demo). Real value comes from Chorus.
+  externalPlaceRef String?
+  hasOnt        Boolean  @default(false)
+  lastActiveAt  DateTime? // last known fibre activity; null = never active
+  createdAt     DateTime @default(now())
+  applications  EligibilityApplication[]
+}
+
+model EligibilityApplication {
+  id             String   @id @default(uuid())
+  reference      String   @unique // human-friendly e.g. EF-2K3M
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+  addressId      String
+  address        Address  @relation(fields: [addressId], references: [id])
+  status         String   @default("DRAFT") // see src/lib/domain/applicationState.ts
+  housingCategory String?  // public_housing | community_housing | school_equity | none
+  evidenceType    String?  // community_services_card | msd_benefit_letter | none
+  contactEmail    String?
+  contactName     String?
+  contactPhone    String?
+  scenarioTag     String?  // demo scenario label (A-G)
+  submittedAt     DateTime?
+  decidedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  ruleResults    EligibilityRuleResult[]
+  evidence       EligibilityEvidence[]
+  decisions      EligibilityDecision[]
+  consents       ConsentRecord[]
+  serviceOrder   ServiceOrder?
+}
+
+model EligibilityRuleResult {
+  id            String   @id @default(uuid())
+  applicationId String
+  application   EligibilityApplication @relation(fields: [applicationId], references: [id])
+  ruleCode      String
+  ruleVersion   String
+  outcome       String // pass | fail | needs_info | manual_review
+  reason        String
+  inputsJson    String // JSON of inputs used (no PII beyond what's necessary)
+  createdAt     DateTime @default(now())
+}
+
+model EligibilityEvidence {
+  id             String   @id @default(uuid())
+  applicationId  String
+  application    EligibilityApplication @relation(fields: [applicationId], references: [id])
+  evidenceType   String
+  storageKey     String   // random object key in private storage (never a public URL)
+  originalName   String
+  safeName       String
+  sizeBytes      Int
+  detectedMime   String
+  integrityHash  String
+  reviewState    String   @default("pending") // pending | accepted | rejected
+  malwareState   String   @default("pending") // pending | clean | infected
+  reviewerId     String?
+  uploadedAt     DateTime @default(now())
+  retentionUntil DateTime
+}
+
+model EligibilityDecision {
+  id            String   @id @default(uuid())
+  applicationId String
+  application   EligibilityApplication @relation(fields: [applicationId], references: [id])
+  outcome       String // ELIGIBLE | INELIGIBLE | NEEDS_INFORMATION | MANUAL_REVIEW
+  automatic     Boolean
+  reason        String
+  ruleVersion   String
+  decidedById   String?
+  createdAt     DateTime @default(now())
+}
+
+model ConsentRecord {
+  id            String   @id @default(uuid())
+  applicationId String
+  application   EligibilityApplication @relation(fields: [applicationId], references: [id])
+  consentType   String // service | marketing | indirect_collection
+  granted       Boolean
+  policyVersion String
+  grantedAt     DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Product & order
+// ---------------------------------------------------------------------------
+
+model ProductPlan {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  name         String
+  downloadMbps Int
+  uploadMbps   Int
+  monthlyPriceCents Int
+  createdAt    DateTime @default(now())
+}
+
+model ServiceOrder {
+  id             String   @id @default(uuid())
+  reference      String   @unique
+  applicationId  String   @unique
+  application    EligibilityApplication @relation(fields: [applicationId], references: [id])
+  planCode       String
+  status         String   @default("CREATED") // see src/lib/domain/orderState.ts
+  modemPaymentTrigger String
+  monthlyBillingTrigger String
+  activatedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  provisioning   ProvisioningRequest?
+  assignment     ModemAssignment?
+  shipment       Shipment?
+  subscription   Subscription?
+  transactions   PaymentTransaction[]
+  externalRefs   ExternalOrderReference[]
+}
+
+model ExternalOrderReference {
+  id           String   @id @default(uuid())
+  serviceOrderId String
+  serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  system       String // chorus | wholesale | shipping | payment
+  refType      String // order_id | circuit_id | place_id | tracking
+  value        String
+  createdAt    DateTime @default(now())
+}
+
+model ProvisioningRequest {
+  id             String   @id @default(uuid())
+  serviceOrderId String   @unique
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  status         String   @default("PENDING") // PENDING | IN_PROGRESS | BLOCKED | COMPLETED | FAILED
+  correlationId  String   @unique
+  createdAt      DateTime @default(now())
+  events         ProvisioningEvent[]
+}
+
+model ProvisioningEvent {
+  id            String   @id @default(uuid())
+  requestId     String
+  request       ProvisioningRequest @relation(fields: [requestId], references: [id])
+  type          String
+  detail        String
+  createdAt     DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Integration jobs (durable queue / outbox)
+// ---------------------------------------------------------------------------
+
+model IntegrationJob {
+  id            String   @id @default(uuid())
+  type          String // provisioning.create | shipping.create | billing.start ...
+  status        String   @default("PENDING") // PENDING | RUNNING | SUCCEEDED | FAILED | DEAD_LETTER
+  payloadJson   String
+  correlationId String
+  idempotencyKey String  @unique
+  attempts      Int      @default(0)
+  maxAttempts   Int      @default(5)
+  nextRunAt     DateTime @default(now())
+  lastError     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  attemptLog    IntegrationAttempt[]
+}
+
+model IntegrationAttempt {
+  id        String   @id @default(uuid())
+  jobId     String
+  job       IntegrationJob @relation(fields: [jobId], references: [id])
+  attemptNo Int
+  outcome   String // success | retryable_error | permanent_error
+  detail    String
+  createdAt DateTime @default(now())
+}
+
+model WebhookEvent {
+  id           String   @id @default(uuid())
+  provider     String
+  externalId   String
+  eventType    String
+  signatureOk  Boolean
+  processed    Boolean  @default(false)
+  receivedAt   DateTime @default(now())
+
+  @@unique([provider, externalId])
+}
+
+// ---------------------------------------------------------------------------
+// Modem & logistics
+// ---------------------------------------------------------------------------
+
+model ModemModel {
+  id           String   @id @default(uuid())
+  manufacturer String
+  model        String
+  confirmed    Boolean  @default(false) // exact model is an open question
+  createdAt    DateTime @default(now())
+  devices      ModemDevice[]
+}
+
+model ModemDevice {
+  id            String   @id @default(uuid())
+  assetId       String   @unique
+  modelId       String
+  model         ModemModel @relation(fields: [modelId], references: [id])
+  serialNumber  String   @unique
+  wanMac        String   @unique // canonical lowercase, colon-separated
+  secondaryMacsJson String? // JSON array
+  status        String   @default("RECEIVED") // see src/lib/domain/deviceState.ts
+  supplierBatch String?
+  receivedAt    DateTime @default(now())
+  faultState    String?  // null | faulty | lost
+  assignment    ModemAssignment?
+}
+
+model ModemAssignment {
+  id             String   @id @default(uuid())
+  deviceId       String   @unique
+  device         ModemDevice @relation(fields: [deviceId], references: [id])
+  serviceOrderId String   @unique
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  assignedAt     DateTime @default(now())
+  releasedAt     DateTime?
+  releaseReason  String?
+  reservationExpiresAt DateTime?
+}
+
+model Shipment {
+  id             String   @id @default(uuid())
+  serviceOrderId String   @unique
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  carrier        String   @default("mock-courier")
+  trackingRef    String   @unique
+  status         String   @default("CREATED") // CREATED | PACKED | SHIPPED | DELIVERED | FAILED
+  createdAt      DateTime @default(now())
+  events         ShipmentEvent[]
+}
+
+model ShipmentEvent {
+  id         String   @id @default(uuid())
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id])
+  status     String
+  detail     String
+  createdAt  DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Payments
+// ---------------------------------------------------------------------------
+
+model PaymentTransaction {
+  id             String   @id @default(uuid())
+  serviceOrderId String
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  kind           String // modem_upfront | monthly
+  amountCents    Int
+  currency       String   @default("NZD")
+  status         String   @default("pending") // pending | succeeded | failed | refunded | abandoned
+  providerRef    String?  // provider transaction id (never card data)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  events         PaymentEvent[]
+}
+
+model PaymentEvent {
+  id            String   @id @default(uuid())
+  transactionId String
+  transaction   PaymentTransaction @relation(fields: [transactionId], references: [id])
+  externalId    String   @unique // provider event id, stored exactly once (idempotency)
+  type          String
+  detail        String
+  createdAt     DateTime @default(now())
+}
+
+model Subscription {
+  id             String   @id @default(uuid())
+  serviceOrderId String   @unique
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  status         String   @default("NOT_CREATED") // see src/lib/domain/subscriptionState.ts
+  monthlyPriceCents Int
+  startedAt      DateTime?
+  nextBillingAt  DateTime?
+  createdAt      DateTime @default(now())
+  failures       BillingFailure[]
+}
+
+model BillingFailure {
+  id             String   @id @default(uuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  reason         String
+  recoveredAt    DateTime?
+  createdAt      DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Support
+// ---------------------------------------------------------------------------
+
+model KnowledgeArticle {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  body        String
+  tagsJson    String   @default("[]")
+  published   Boolean  @default(true)
+  needsReview Boolean  @default(false) // e.g. model-specific content awaiting confirmation
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+model SupportConversation {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  channel    String   @default("web")
+  createdAt  DateTime @default(now())
+  messages   SupportMessage[]
+  ticket     SupportTicket?
+}
+
+model SupportMessage {
+  id             String   @id @default(uuid())
+  conversationId String
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id])
+  role           String // customer | assistant | staff
+  content        String
+  citationsJson  String   @default("[]") // article ids/titles supporting an AI answer
+  createdAt      DateTime @default(now())
+}
+
+model SupportTicket {
+  id             String   @id @default(uuid())
+  conversationId String   @unique
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id])
+  reference      String   @unique
+  category       String
+  priority       String   @default("normal")
+  status         String   @default("open") // open | in_progress | resolved
+  reason         String
+  assignedToId   String?
+  createdAt      DateTime @default(now())
+  resolvedAt     DateTime?
+}
+
+model CustomerNotification {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  channel   String // email | sms
+  template  String
+  subject   String
+  preview   String // safe, PII-minimised preview
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Compliance & operations
+// ---------------------------------------------------------------------------
+
+model AuditEvent {
+  id            String   @id @default(uuid())
+  type          String
+  actorId       String?
+  actorLabel    String
+  targetType    String?
+  targetId      String?
+  correlationId String?
+  reason        String?
+  metadataJson  String   @default("{}") // safe metadata only (no PII/secrets)
+  createdAt     DateTime @default(now())
+}
+
+model SecurityEvent {
+  id        String   @id @default(uuid())
+  type      String
+  detail    String
+  ipHash    String?
+  createdAt DateTime @default(now())
+}
+
+model PrivacyRequest {
+  id        String   @id @default(uuid())
+  userId    String?
+  kind      String // access | correction | deletion
+  status    String   @default("received")
+  detail    String
+  createdAt DateTime @default(now())
+}
+
+model SystemConfiguration {
+  id         String   @id @default(uuid())
+  key        String   @unique
+  valueJson  String
+  updatedAt  DateTime @updatedAt
+  changes    ConfigurationChange[]
+}
+
+model ConfigurationChange {
+  id        String   @id @default(uuid())
+  configId  String
+  config    SystemConfiguration @relation(fields: [configId], references: [id])
+  oldValue  String
+  newValue  String
+  changedBy String
+  reason    String
+  createdAt DateTime @default(now())
+}
