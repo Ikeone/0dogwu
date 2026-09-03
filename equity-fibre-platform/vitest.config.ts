@@ -13,7 +13,7 @@ export default defineConfig({
     globals: true,
     // Integration tests hit the local SQLite dev database.
     env: {
-      DATABASE_URL: "file:./prisma/dev.db",
+      DATABASE_URL: "file:./dev.db",
       APP_ENV: "test",
       DEMO_MODE: "true",
       AUTH_SECRET: "dev-only-insecure-change-me",

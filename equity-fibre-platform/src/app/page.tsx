@@ -5,6 +5,9 @@ import { BRAND } from "@/lib/config/brand";
 import { getBusinessConfig } from "@/lib/services/config";
 import { formatNzd, modemContribution, monthlyPrice } from "@/lib/domain/pricing";
 
+// Reads runtime business config + auth state; render on demand (not at build).
+export const dynamic = "force-dynamic";
+
 export default async function LandingPage() {
   const cfg = await getBusinessConfig();
   const price = monthlyPrice(cfg);

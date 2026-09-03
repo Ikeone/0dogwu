@@ -4,6 +4,10 @@
  */
 import { PrismaClient } from "@prisma/client";
 
+// Zero-config demo fallback: resolves to prisma/dev.db (relative to the schema
+// directory). Production sets DATABASE_URL to a managed Postgres instance.
+process.env.DATABASE_URL ??= "file:./dev.db";
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };

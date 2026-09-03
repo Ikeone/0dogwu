@@ -15,7 +15,7 @@
     "db:push": "prisma db push --skip-generate",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "rm -f prisma/dev.db && prisma db push --skip-generate && tsx prisma/seed.ts",
+    "db:reset": "tsx prisma/reset.ts",
     "demo": "npm run db:reset && next dev",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

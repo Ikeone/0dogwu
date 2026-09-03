@@ -22,7 +22,7 @@ const EnvSchema = z.object({
   APP_BASE_URL: z.string().url().default("http://localhost:3000"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
-  DATABASE_URL: z.string().min(1).default("file:./prisma/dev.db"),
+  DATABASE_URL: z.string().min(1).default("file:./dev.db"),
 
   AUTH_SECRET: z.string().min(8).default("dev-only-insecure-change-me"),
   FIELD_ENCRYPTION_KEY: z

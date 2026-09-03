@@ -10,7 +10,7 @@
  * app modules are dynamically imported AFTER env is set (so the Prisma client
  * and env validation see the right values).
  */
-process.env.DATABASE_URL ??= "file:./prisma/dev.db";
+process.env.DATABASE_URL ??= "file:./dev.db";
 process.env.APP_ENV ??= "development";
 process.env.DEMO_MODE ??= "true";
 process.env.AUTH_SECRET ??= "dev-only-insecure-change-me";
