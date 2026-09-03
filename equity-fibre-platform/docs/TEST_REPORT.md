@@ -1,15 +1,24 @@
 # Test report
 
-Actual commands and outcomes. Re-run with `npm run check` (lint + typecheck + test + build).
+Actual commands and outcomes. Re-run with `npm run check` (lint + typecheck + test + build). Raw baseline logs: `artifacts/readiness/<ts>/` (gitignored).
 
-## Automated
+## Automated (current, post-productionisation)
 
 | Check | Command | Result |
 | --- | --- | --- |
 | Lint | `npm run lint` | ✅ No ESLint warnings or errors |
 | Type-check | `npm run typecheck` (`tsc --noEmit`) | ✅ Passed |
-| Unit + integration tests | `npm run test` (Vitest) | ✅ **48 passed** across 9 files |
-| Production build | `npm run build` | ✅ Succeeded (39 routes) |
+| Unit + integration tests | `npm run test` (Vitest) | ✅ **80 passed** across 14 files |
+| Production build | `npm run build` | ✅ Succeeded (nonce CSP verified) |
+| Readiness gate (production) | `npm run readiness:production` | ✅ Correctly **FAILS (exit 1)** on demo env; **PASSES (exit 0)** on a fully-configured production env — fail-closed proven |
+
+### Productionisation test additions (48 → 80)
+- `tests/unit/eligibilityRuleSet.test.ts` (17): AND/OR groups, rule-version/status transitions, authoritative precedence, provider outage→manual, inconclusive→manual, duplicate service, missing/expired evidence, prequalified token, partner attestation, MANUAL_DOCUMENT_REVIEW never auto-approves, config-driven.
+- `tests/unit/mode.test.ts` (5): DEMO allows mocks; PILOT forbids MOCK; PRODUCTION fail-closed multi-control; DISABLED critical forbidden; fully-configured passes.
+- `tests/integration/killswitch.test.ts` (4): default enabled; pause blocks guarded action; intake pause; assert throws.
+- `tests/integration/mfa-approvals.test.ts` (4): field-crypto round-trip + tamper; TOTP enrol/verify + single-use recovery codes + secret stored encrypted; maker-checker approve + self-approval rejected.
+- `tests/integration/reconciliation.test.ts` (2): crashed-lease recovery; fresh RUNNING untouched.
+- `tests/e2e/security.spec.ts`: added nonce-CSP + security-header regression assertions (E2E requires browsers; verified manually via curl — see `artifacts/readiness/<ts>/security-headers-summary.txt`).
 
 ### Test coverage by area (48 tests)
 - **Eligibility rules** (11): eligible social-housing, eligible qualifying-school (when enabled), recently-active, no ONT, missing evidence, unsupported/out-of-scope, duplicate active service, provider conflict → manual review, provider unavailable → manual review, never-active ONT, automatic vs manual flagging.

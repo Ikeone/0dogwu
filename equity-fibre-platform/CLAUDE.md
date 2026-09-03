@@ -32,3 +32,12 @@ After any structural change, update **`FILE_MAP.md`** (every file explained) and
 - Do not describe mocked integrations as live.
 - Do not claim production-readiness because it runs or tests pass.
 - Do not weaken security controls to make a build pass.
+
+## Productionisation rules (must preserve)
+- **Environment modes are load-bearing.** Keep `SYSTEM_MODE` (DEMO|SANDBOX|PILOT|PRODUCTION) and per-provider modes (`src/lib/config/mode.ts`). PRODUCTION must fail closed (mocks/demo/SQLite/local storage/weak secrets are fatal). Never remove `assertMockAllowed` / `ProviderDisabledError` (no silent fallback). Keep `scripts/readiness.ts` gates non-zero on any violation.
+- **Readiness labels** in all tracking docs: VERIFIED, IMPLEMENTED_NOT_YET_VERIFIED, BLOCKED_EXTERNAL, NOT_STARTED, DEFERRED_WITH_REASON, NOT_APPLICABLE. Never "done" without evidence.
+- **Blocker IDs are stable** (CHORUS-001, PAY-001, NET-001, MSD-001, HOUSE-001, MODEM-001, COUR-001, COMM-001, OPS-001, LEGAL-001, SEC-*, PRIV-*). Any internal TODO must be implemented or attached to a numbered external blocker with an exact reason. Keep `docs/EXTERNAL_BLOCKERS.md` + `docs/external-requests/*` in sync.
+- **High-risk actions** require deterministic domain logic + server authz + idempotency + audit + (PILOT/PROD) step-up + maker-checker. AI must never decide eligibility, move money, assign a modem, provision/suspend, change config or access. Keep MFA (`src/lib/auth/mfa.ts`), step-up (`session.ts`), approvals (`services/approvals.ts`), kill switches (`services/killSwitch.ts`).
+- **Eligibility** is a versioned rule set (`domain/eligibilityRuleSet.ts`): ALL/ANY groups, authoritative-precedence, outage→manual, never auto-approve a government document. A non-APPROVED rule set must never auto-decide.
+- **Crypto**: use `security/fieldCrypto.ts` (AES-256-GCM) / KMS in prod; never home-grown crypto.
+- Update `PRODUCTIONISATION_STATUS.md`, `RELEASE_READINESS_MATRIX.md`, `FILE_MAP.md`, and `docs/TEST_REPORT.md` after material changes. Do not hand-edit test totals — regenerate.
