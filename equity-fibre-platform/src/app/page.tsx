@@ -20,11 +20,24 @@ export default async function LandingPage() {
     { n: 4, t: "Get connected", d: "We ship your modem and activate your fibre." },
   ];
 
+  const modemAmount = formatNzd(modem.customerContributionCents);
+  const monthly = formatNzd(price.consumerPriceCents);
+
   const faqs = [
-    { q: "Is this free?", a: "No. Stride Broadband is a low-cost plan — up to $30 per month — for eligible households, plus a one-off upfront modem contribution." },
-    { q: "Who can apply?", a: "Homes that already have a Chorus fibre box (ONT) that has been inactive for at least three months, and that meet an approved household category with approved low-income evidence. Final criteria are being confirmed." },
-    { q: "When does billing start?", a: "Monthly billing begins only once your fibre service is activated — not when your modem is delivered." },
-    { q: "What if a payment fails?", a: "A single failed monthly payment does not disconnect you. You get a grace period to update your payment method." },
+    { q: "What is Stride Broadband?", a: `Stride Broadband is a low-cost home fibre plan for eligible households — ${cfg.plan.downloadMbps} Mbps download and ${cfg.plan.uploadMbps} Mbps upload for up to ${monthly} per month. It uses the fibre already installed at your address.` },
+    { q: "Is it free?", a: `No. It is a low-cost plan — up to ${monthly} per month — plus a one-off upfront modem contribution. It is not a free service.` },
+    { q: "Who can apply?", a: "Homes that already have a Chorus fibre box (ONT) that has been inactive for at least three months, that meet an approved household category (such as public or community housing), and that can provide approved low-income evidence. The exact launch criteria are being confirmed with Chorus." },
+    { q: "What evidence do I need?", a: "Approved low-income evidence such as a Community Services Card or a MyMSD Benefit Breakdown Letter. You upload a clear photo or PDF; it is stored privately and only used to check your eligibility." },
+    { q: "How much does it cost each month?", a: `Up to ${monthly} per month (this working figure includes GST). We always show the exact amount before you confirm anything.` },
+    { q: "What is the upfront modem contribution?", a: `A one-off amount of ${modemAmount} that covers part of your managed modem and shipping. You pay it once, before your modem is shipped. The exact figure is shown before you pay.` },
+    { q: "When does monthly billing start?", a: "Monthly billing begins only once your fibre service is activated — not when your modem is delivered. You will not be billed monthly before you are connected." },
+    { q: "What happens if I can't pay one month?", a: "A single missed monthly payment does not disconnect you. You get a grace period to update your payment method, and you can tell us if you are experiencing hardship so we can help. We will not automatically suspend a service while a hardship or dispute case is open." },
+    { q: "Can I use my own modem?", a: "For launch, the plan uses the managed modem we supply so we can support you reliably. Bring-your-own-modem may be considered later." },
+    { q: "How long does it take to get connected?", a: "After you are approved and your upfront payment succeeds, we assign and ship a modem, then arrange provisioning and activation. You can track every step in your account portal." },
+    { q: "What speeds do I get?", a: `${cfg.plan.downloadMbps} Mbps download and ${cfg.plan.uploadMbps} Mbps upload. Real-world speeds can vary with your home setup and the number of devices connected.` },
+    { q: "How is my personal information handled?", a: "We collect only what we need to check eligibility and provide the service. Eligibility evidence is stored privately with restricted, logged access. You can ask to access, correct, or delete your information from your account portal." },
+    { q: "How do I cancel?", a: "You can request cancellation from your account portal or by contacting support. Any equipment return and applicable terms are explained at that time." },
+    { q: "How do I get help?", a: "Our assistant can answer setup, eligibility, and billing questions, and a person steps in when it matters. You can also raise a support ticket from your account." },
   ];
 
   return (
@@ -62,7 +75,7 @@ export default async function LandingPage() {
               <span className="text-4xl font-bold text-ink">{formatNzd(price.consumerPriceCents)}</span>
               <span className="text-ink-faint">/ month</span>
             </div>
-            <div className="mt-1 text-xs text-ink-faint">Working assumption: price includes GST.</div>
+            <div className="mt-1 text-xs text-ink-faint">Price includes GST.</div>
             <ul className="mt-5 space-y-2 text-sm text-ink-soft">
               <li className="flex items-center gap-2"><Dot /> {cfg.plan.downloadMbps} Mbps download / {cfg.plan.uploadMbps} Mbps upload</li>
               <li className="flex items-center gap-2"><Dot /> Managed modem included</li>
@@ -76,8 +89,13 @@ export default async function LandingPage() {
 
       {/* How it works */}
       <section id="how" className="container-page py-16">
-        <h2 className="text-2xl font-bold text-ink">How it works</h2>
-        <p className="mt-2 max-w-2xl text-ink-soft">A simple, guided process — most of it automated so we can keep costs low.</p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold text-ink">How it works</h2>
+            <p className="mt-2 max-w-2xl text-ink-soft">A simple, guided process — most of it automated so we can keep costs low.</p>
+          </div>
+          <Link href="/how-it-works" className="btn-secondary">See how it works in detail →</Link>
+        </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((s) => (
             <Card key={s.n}>
@@ -98,23 +116,31 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* FAQ — expandable dropdowns */}
       <section id="faq" className="container-page py-16">
         <h2 className="text-2xl font-bold text-ink">Frequently asked questions</h2>
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <p className="mt-2 text-ink-soft">Tap a question to see the answer.</p>
+        <div className="mt-6 space-y-2.5">
           {faqs.map((f) => (
-            <Card key={f.q}>
-              <div className="font-semibold text-ink">{f.q}</div>
-              <p className="mt-2 text-sm text-ink-soft">{f.a}</p>
-            </Card>
+            <details key={f.q} className="group rounded-2xl border border-slate-200 bg-white shadow-card">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold text-ink">
+                <span>{f.q}</span>
+                <span className="text-brand-600 transition-transform group-open:rotate-45" aria-hidden>+</span>
+              </summary>
+              <p className="border-t border-slate-100 px-5 py-4 text-sm text-ink-soft">{f.a}</p>
+            </details>
           ))}
+        </div>
+        <div className="mt-6">
+          <Link href="/support" className="btn-secondary">Still have a question? Ask us</Link>
         </div>
       </section>
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="container-page flex flex-col items-start justify-between gap-3 py-8 text-sm text-ink-faint sm:flex-row">
-          <div>© {new Date().getFullYear()} {BRAND.companyName} (demo). Not a live service.</div>
-          <div className="flex gap-4">
+          <div>© {new Date().getFullYear()} {BRAND.companyName}. {BRAND.productName}.</div>
+          <div className="flex flex-wrap gap-4">
+            <Link href="/how-it-works" className="hover:text-ink">How it works</Link>
             <Link href="/support" className="hover:text-ink">Support</Link>
             <Link href="/login" className="hover:text-ink">Sign in</Link>
             <span>Privacy: {BRAND.privacyContact}</span>

@@ -25,7 +25,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ fullName, email, password }),
+        body: JSON.stringify({ fullName: fullName.trim(), email: email.trim(), password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not create your account");
@@ -59,7 +59,7 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label className="label" htmlFor="email">Email</label>
-                <input id="email" className="input" type="email" autoComplete="email" required
+                <input id="email" className="input" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required
                   value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.nz" />
               </div>
               <div>
