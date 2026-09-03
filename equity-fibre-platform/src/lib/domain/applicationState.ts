@@ -1,0 +1,27 @@
+import type { TransitionMap } from "./stateMachine";
+
+export const APPLICATION_STATES = [
+  "DRAFT",
+  "SUBMITTED",
+  "CHECKING",
+  "NEEDS_INFORMATION",
+  "MANUAL_REVIEW",
+  "ELIGIBLE",
+  "INELIGIBLE",
+  "WITHDRAWN",
+  "EXPIRED",
+] as const;
+
+export type ApplicationState = (typeof APPLICATION_STATES)[number];
+
+export const APPLICATION_TRANSITIONS: TransitionMap<ApplicationState> = {
+  DRAFT: ["SUBMITTED", "WITHDRAWN", "EXPIRED"],
+  SUBMITTED: ["CHECKING", "WITHDRAWN"],
+  CHECKING: ["NEEDS_INFORMATION", "MANUAL_REVIEW", "ELIGIBLE", "INELIGIBLE"],
+  NEEDS_INFORMATION: ["CHECKING", "WITHDRAWN", "EXPIRED"],
+  MANUAL_REVIEW: ["ELIGIBLE", "INELIGIBLE", "NEEDS_INFORMATION"],
+  ELIGIBLE: ["WITHDRAWN"],
+  INELIGIBLE: [],
+  WITHDRAWN: [],
+  EXPIRED: [],
+};
