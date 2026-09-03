@@ -113,8 +113,52 @@ export async function requireCapability(cap: Capability): Promise<SessionUser> {
 }
 
 export class AuthError extends Error {
-  constructor(public readonly code: "authentication_required" | "staff_required" | "forbidden") {
+  constructor(
+    public readonly code:
+      | "authentication_required"
+      | "staff_required"
+      | "forbidden"
+      | "step_up_required"
+      | "mfa_required",
+  ) {
     super(code);
     this.name = "AuthError";
   }
+}
+
+const STEP_UP_MS = 1000 * 60 * 5; // 5-minute elevation window
+
+/** Elevate the current session for sensitive operations (after re-auth/MFA). */
+export async function elevateCurrentSession(): Promise<void> {
+  const env = getEnv();
+  const jar = await cookies();
+  const token = jar.get(env.SESSION_COOKIE_NAME)?.value;
+  if (!token) throw new AuthError("authentication_required");
+  await prisma.session.updateMany({
+    where: { tokenHash: hashToken(token) },
+    data: { stepUpUntil: new Date(Date.now() + STEP_UP_MS) },
+  });
+}
+
+/**
+ * Require a recent step-up elevation for a sensitive operation. Throws
+ * AuthError('step_up_required') if the session has not been elevated recently.
+ */
+export async function requireStepUp(): Promise<SessionUser> {
+  const user = await requireUser();
+  const env = getEnv();
+  const jar = await cookies();
+  const token = jar.get(env.SESSION_COOKIE_NAME)?.value;
+  const session = token
+    ? await prisma.session.findUnique({ where: { tokenHash: hashToken(token) } })
+    : null;
+  if (!session?.stepUpUntil || session.stepUpUntil.getTime() < Date.now()) {
+    throw new AuthError("step_up_required");
+  }
+  return user;
+}
+
+/** Whether staff MFA is mandatory in the current environment. */
+export function staffMfaRequired(): boolean {
+  return (process.env.STAFF_MFA_REQUIRED ?? "").toLowerCase() === "true";
 }

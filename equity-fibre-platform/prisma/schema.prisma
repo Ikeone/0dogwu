@@ -38,6 +38,7 @@ model User {
   isStaff        Boolean         @default(false)
   passwordHash   String?
   mfaEnrolled    Boolean         @default(false)
+  mfaSecretEnc   String?         // encrypted TOTP secret (envelope-encrypted at rest)
   createdAt      DateTime        @default(now())
   disabledAt     DateTime?
 
@@ -47,6 +48,31 @@ model User {
   applications    EligibilityApplication[]
   conversations   SupportConversation[]
   notifications   CustomerNotification[]
+  recoveryCodes   MfaRecoveryCode[]
+}
+
+model MfaRecoveryCode {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// Maker-checker approval for high-risk operations (PILOT/PRODUCTION).
+model ApprovalRequest {
+  id              String    @id @default(uuid())
+  type            String    // config_change | refund | rule_change | killswitch ...
+  payloadJson     String
+  status          String    @default("pending") // pending | approved | rejected | applied
+  reason          String
+  requestedById   String?
+  requestedByLabel String
+  approvedById    String?
+  approvedByLabel String?
+  createdAt       DateTime  @default(now())
+  decidedAt       DateTime?
 }
 
 model CustomerProfile {
@@ -78,6 +104,7 @@ model Session {
   expiresAt  DateTime
   lastSeenAt DateTime @default(now())
   ip         String?
+  stepUpUntil DateTime? // short-lived elevation for sensitive operations
 }
 
 // ---------------------------------------------------------------------------
