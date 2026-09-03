@@ -19,6 +19,8 @@
     "demo": "npm run db:reset && next dev",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "readiness:pilot": "tsx scripts/readiness.ts pilot",
+    "readiness:production": "tsx scripts/readiness.ts production",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

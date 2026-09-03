@@ -6,6 +6,7 @@
  * - Production refuses to start with demo secrets or mock money/provisioning.
  */
 import { z } from "zod";
+import { evaluateModePolicy, type ModeEnvLike } from "./mode";
 
 const DEMO_SECRET_MARKERS = ["dev-only-insecure", "change-me"];
 
@@ -15,6 +16,19 @@ const providerEnum = <T extends [string, ...string[]]>(vals: T, def: T[number]) 
 const EnvSchema = z.object({
   APP_ENV: z.enum(["development", "test", "staging", "production"]).default("development"),
   NODE_ENV: z.string().default("development"),
+  // Authoritative environment mode (see src/lib/config/mode.ts).
+  SYSTEM_MODE: z.enum(["DEMO", "SANDBOX", "PILOT", "PRODUCTION"]).default("DEMO"),
+  // Optional per-provider mode overrides (validated by evaluateModePolicy).
+  ADDRESS_MODE: z.string().optional(),
+  PROVISIONING_MODE: z.string().optional(),
+  NETWORK_MODE: z.string().optional(),
+  PAYMENT_MODE: z.string().optional(),
+  SHIPPING_MODE: z.string().optional(),
+  EMAIL_MODE: z.string().optional(),
+  SMS_MODE: z.string().optional(),
+  AI_MODE: z.string().optional(),
+  STORAGE_MODE: z.string().optional(),
+  EVIDENCE_VERIFICATION_MODE: z.string().optional(),
   DEMO_MODE: z
     .string()
     .default("true")
@@ -94,9 +108,10 @@ export function getEnv(): Env {
   }
   const env = parsed.data;
 
-  const isProd = env.APP_ENV === "production";
+  // Fail-closed when either APP_ENV or SYSTEM_MODE indicates a locked environment.
+  const isProd = env.APP_ENV === "production" || env.SYSTEM_MODE === "PRODUCTION";
   if (isProd) {
-    // Production hard stops. See docs/SECURITY.md.
+    // Production hard stops. See docs/SECURITY.md + docs/ENVIRONMENT_AND_PROVIDER_MODE_MATRIX.md.
     const problems: string[] = [];
     if (env.DEMO_MODE) problems.push("DEMO_MODE must be false in production.");
     if (usesDemoSecret(env.AUTH_SECRET))
@@ -109,6 +124,11 @@ export function getEnv(): Env {
       problems.push("PROVISIONING_PROVIDER=mock is not allowed in production.");
     if (env.CHORUS_ENVIRONMENT === "mock")
       problems.push("CHORUS_ENVIRONMENT=mock is not allowed in production.");
+
+    // Layer in the full provider mode-policy violations (fail-closed).
+    const policy = evaluateModePolicy({ ...(process.env as ModeEnvLike), SYSTEM_MODE: "PRODUCTION" });
+    problems.push(...policy.violations);
+
     if (problems.length > 0) {
       throw new Error(
         "Refusing to start in production:\n" +

@@ -13,8 +13,10 @@ import { recordAudit } from "./audit";
 import { idempotencyKey } from "@/lib/ids";
 import { onModemPaymentConfirmed, transitionSubscription } from "./orders";
 import { sendNotification } from "./notifications";
+import { assertWorkflowEnabled } from "./killSwitch";
 
 export async function createModemCheckout(orderId: string) {
+  await assertWorkflowEnabled("modem_payments");
   const cfg = await getBusinessConfig();
   const amount = modemContribution(cfg).customerContributionCents;
 
