@@ -5,6 +5,7 @@ import { Card, Pill, StatusPill, EmptyState } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { formatNzd } from "@/lib/domain/pricing";
+import { PaymentHelp } from "./PaymentHelp";
 
 export default async function PortalPage() {
   const user = await getSessionUser();
@@ -33,6 +34,10 @@ export default async function PortalPage() {
     orderBy: { createdAt: "desc" },
     take: 5,
   });
+  const [openHardship, openDisputes] = await Promise.all([
+    prisma.hardshipCase.findMany({ where: { userId: user.id, status: { in: ["open", "in_progress"] } }, orderBy: { createdAt: "desc" } }),
+    prisma.billingDispute.findMany({ where: { userId: user.id, status: { in: ["open", "investigating"] } }, orderBy: { createdAt: "desc" } }),
+  ]);
 
   const order = application?.serviceOrder;
   const sub = order?.subscription;
@@ -127,6 +132,27 @@ export default async function PortalPage() {
                       </li>
                     ))}
                   </ul>
+                )}
+              </Card>
+
+              <Card>
+                <div className="text-sm font-semibold text-ink">Payment help</div>
+                {openHardship.length > 0 || openDisputes.length > 0 ? (
+                  <div className="mt-2 space-y-1.5 text-sm">
+                    {openHardship.map((h) => (
+                      <div key={h.id} className="flex items-center justify-between rounded-lg bg-emerald-50 px-2.5 py-1.5 text-emerald-800">
+                        <span>Hardship {h.reference}</span><StatusPill status={h.status} />
+                      </div>
+                    ))}
+                    {openDisputes.map((d) => (
+                      <div key={d.id} className="flex items-center justify-between rounded-lg bg-emerald-50 px-2.5 py-1.5 text-emerald-800">
+                        <span>Dispute {d.reference}</span><StatusPill status={d.status} />
+                      </div>
+                    ))}
+                    <p className="text-xs text-ink-faint">Your service is protected from automatic suspension while a case is open.</p>
+                  </div>
+                ) : (
+                  <PaymentHelp />
                 )}
               </Card>
 

@@ -10,6 +10,7 @@
  */
 import { processDueJobs } from "@/lib/services/provisioning";
 import { reconcileStuckJobs, reconcileStuckProvisioning } from "@/lib/services/reconciliation";
+import { expireHolds } from "@/lib/services/holds";
 import { logProviderStartup } from "@/lib/providers/factory";
 import { logger } from "@/lib/logger";
 
@@ -29,6 +30,7 @@ async function loop() {
       if (tick % RECONCILE_EVERY_TICKS === 0) {
         await reconcileStuckJobs();
         await reconcileStuckProvisioning();
+        await expireHolds();
       }
     } catch (err) {
       logger.error("worker.error", { message: err instanceof Error ? err.message : String(err) });

@@ -169,9 +169,11 @@ export async function simulateMonthlyCharge(
       data: { subscriptionId: sub.id, reason: "Monthly payment failed (mock)" },
     });
     await sendNotification(orderId, "monthly_payment_failed", "Payment issue — action needed");
-    // Suspension requires an explicitly enabled, reviewed policy.
+    // Suspension requires an explicitly enabled, reviewed policy AND must pass
+    // the suspension-safety guard (hardship/dispute/provider holds block it).
     if (cfg.billing.suspendOnSingleFailure) {
-      await transitionSubscription(orderId, "SUSPENDED", actorLabel, "Policy: suspend on single failure");
+      const { evaluateSuspension } = await import("./suspension");
+      await evaluateSuspension(orderId, { trigger: "monthly_payment_failed", actorLabel });
     }
   } else {
     // Recovery path.
