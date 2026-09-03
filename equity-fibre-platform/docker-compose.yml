@@ -1,0 +1,54 @@
+# Local developer stack for PostgreSQL-parity development and tests.
+# Usage:
+#   docker compose up -d
+#   DATABASE_URL="postgresql://wn:wn@localhost:5432/wn_equity" \
+#     npx prisma migrate deploy && npm run db:seed
+#
+# NOTE: The demo default remains SQLite for zero-infra runs. PILOT/PRODUCTION
+# MUST use managed PostgreSQL + private object storage (see docs/DEPLOYMENT.md).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wn
+      POSTGRES_PASSWORD: wn
+      POSTGRES_DB: wn_equity
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wn -d wn_equity"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # S3-compatible private object storage for evidence (dev parity with prod S3).
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  # Malware scanning for uploaded evidence (dev/staging).
+  clamav:
+    image: clamav/clamav:latest
+    ports:
+      - "3310:3310"
+
+  # Local SMTP capture for notification testing.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  pgdata:
+  miniodata:
