@@ -11,6 +11,7 @@ const NAV: { href: string; label: string; cap: Capability }[] = [
   { href: "/admin/provisioning", label: "Provisioning", cap: "provisioning.operate" },
   { href: "/admin/inventory", label: "Modem inventory", cap: "inventory.manage" },
   { href: "/admin/payments", label: "Payments", cap: "payments.view" },
+  { href: "/admin/hardship", label: "Hardship & holds", cap: "hardship.handle" },
   { href: "/admin/support", label: "Support", cap: "support.handle" },
   { href: "/admin/config", label: "Configuration", cap: "config.view" },
   { href: "/admin/metrics", label: "Metrics", cap: "dashboard.view" },

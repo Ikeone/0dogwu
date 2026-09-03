@@ -63,11 +63,11 @@ export function ConfigEditor({ cfg }: { cfg: Cfg }) {
         </div>
         <label className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-2.5">
           <span>Suspend on a single failed payment</span>
-          <input type="checkbox" checked={state.suspendOnSingleFailure} onChange={(e) => { const v = e.target.checked; setState({ ...state, suspendOnSingleFailure: v }); save("billing.suspendOnSingleFailure", v); }} />
+          <input type="checkbox" checked={state.suspendOnSingleFailure} onChange={(e) => { const v = e.target.checked; setState({ ...state, suspendOnSingleFailure: v }); void save("billing.suspendOnSingleFailure", v); }} />
         </label>
         <label className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-2.5">
           <span>Deduct Chorus contribution from customer price</span>
-          <input type="checkbox" checked={state.deductChorusContribution} onChange={(e) => { const v = e.target.checked; setState({ ...state, deductChorusContribution: v }); save("modem.deductChorusContribution", v); }} />
+          <input type="checkbox" checked={state.deductChorusContribution} onChange={(e) => { const v = e.target.checked; setState({ ...state, deductChorusContribution: v }); void save("modem.deductChorusContribution", v); }} />
         </label>
       </div>
       {msg ? <p className="mt-2 text-sm text-emerald-700">{msg}</p> : null}

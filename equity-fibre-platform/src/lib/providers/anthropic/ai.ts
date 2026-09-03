@@ -26,7 +26,7 @@ export class AnthropicSupportProvider implements SupportAIProvider {
 
   private systemPrompt(): string {
     return [
-      "You are a support assistant for the Equity Fibre service.",
+      "You are a support assistant for the Stride Broadband service.",
       "Answer ONLY using the provided approved knowledge snippets.",
       "If the snippets do not contain the answer, say you are not sure and offer a human.",
       "Never decide eligibility, never promise an activation date, never ask for card numbers, passwords, or benefit identifiers.",

@@ -5,6 +5,7 @@
  * adapters throw a clear error rather than silently falling back to mock.
  */
 import { getEnv } from "@/lib/config/env";
+import { getModePolicy } from "@/lib/config/mode";
 import { logger } from "@/lib/logger";
 import type {
   AddressProvider,
@@ -25,9 +26,35 @@ import { LocalObjectStorageProvider } from "./mock/storage";
 import { KnowledgeBaseAIProvider } from "./mock/ai";
 import { AnthropicSupportProvider } from "./anthropic/ai";
 
+/** Raised when a provider cannot be served safely (no silent fallback). */
+export class ProviderDisabledError extends Error {
+  constructor(key: string, reason: string) {
+    super(`Provider '${key}' is unavailable: ${reason}`);
+    this.name = "ProviderDisabledError";
+  }
+}
+
+/**
+ * Guard: a MOCK provider must never serve in PILOT/PRODUCTION. This is the
+ * defense-in-depth complement to the startup mode-policy check — even if a
+ * misconfiguration slips past startup, requesting a mock here fails closed.
+ */
+function assertMockAllowed(key: string): void {
+  const { systemMode } = getModePolicy();
+  if (systemMode === "PILOT" || systemMode === "PRODUCTION") {
+    throw new ProviderDisabledError(
+      key,
+      `mock providers are forbidden in SYSTEM_MODE=${systemMode} (no silent fallback).`,
+    );
+  }
+}
+
 export function getAddressProvider(): AddressProvider {
   const env = getEnv();
-  if (env.ADDRESS_PROVIDER === "mock") return new MockAddressProvider();
+  if (env.ADDRESS_PROVIDER === "mock") {
+    assertMockAllowed("address");
+    return new MockAddressProvider();
+  }
   throw new Error(
     "ADDRESS_PROVIDER=chorus is not implemented yet. Implement ChorusAddressProvider (see docs/integrations/chorus.md).",
   );
@@ -35,7 +62,10 @@ export function getAddressProvider(): AddressProvider {
 
 export function getPaymentProvider(): PaymentProvider {
   const env = getEnv();
-  if (env.PAYMENT_PROVIDER === "mock") return new MockPaymentProvider();
+  if (env.PAYMENT_PROVIDER === "mock") {
+    assertMockAllowed("payment");
+    return new MockPaymentProvider();
+  }
   throw new Error(
     "PAYMENT_PROVIDER=stripe is not implemented yet. Implement StripePaymentProvider (see docs/integrations/payment.md).",
   );
@@ -43,7 +73,10 @@ export function getPaymentProvider(): PaymentProvider {
 
 export function getProvisioningProvider(): ProvisioningProvider {
   const env = getEnv();
-  if (env.PROVISIONING_PROVIDER === "mock") return new MockProvisioningProvider();
+  if (env.PROVISIONING_PROVIDER === "mock") {
+    assertMockAllowed("provisioning");
+    return new MockProvisioningProvider();
+  }
   throw new Error(
     "PROVISIONING_PROVIDER != mock is not implemented yet. Implement the provisioning adapter (see docs/integrations/provisioning.md).",
   );
@@ -51,7 +84,10 @@ export function getProvisioningProvider(): ProvisioningProvider {
 
 export function getShippingProvider(): ShippingProvider {
   const env = getEnv();
-  if (env.SHIPPING_PROVIDER === "mock") return new MockShippingProvider();
+  if (env.SHIPPING_PROVIDER === "mock") {
+    assertMockAllowed("shipping");
+    return new MockShippingProvider();
+  }
   throw new Error("SHIPPING_PROVIDER=courier is not implemented yet.");
 }
 

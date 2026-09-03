@@ -143,5 +143,24 @@ Every source file, its purpose, and classification. **Class**: `demo` (demo-only
 | `tests/unit/*.test.ts` | eligibility, mac, state, pricing, redaction, support/AI+retry, billing/file-sniff |
 | `tests/integration/*.test.ts` | webhook idempotency, modem single-use + MAC rejection |
 
+## Productionisation additions (branch `cursor/productionisation-e7a1`)
+| Path | Purpose | Class |
+| --- | --- | --- |
+| `src/lib/config/mode.ts` | SYSTEM_MODE + provider mode policy (fail-closed), pure/testable | prod (security) |
+| `scripts/readiness.ts` | `readiness:pilot`/`readiness:production` gates (non-zero on violations) | prod |
+| `src/lib/services/killSwitch.ts` | Kill-switch registry + workflow guards | prod |
+| `src/lib/domain/eligibilityRuleSet.ts` | Versioned configurable rule set (ALL/ANY, verification paths) | shared |
+| `src/lib/auth/mfa.ts` | Staff TOTP MFA + single-use recovery codes | prod (security) |
+| `src/lib/security/fieldCrypto.ts` | AES-256-GCM field encryption (KMS in prod) | prod (security) |
+| `src/lib/services/approvals.ts` | Maker-checker approval workflow | prod (security) |
+| `src/lib/services/reconciliation.ts` | Lease recovery + stuck-order reconciliation | prod |
+| `src/middleware.ts` | Per-request nonce CSP | prod (security) |
+| `src/app/api/auth/mfa/*`, `.../step-up` | MFA enrol/confirm + step-up routes | prod (security) |
+| `src/app/api/admin/approvals/route.ts` | Checker side of maker-checker | prod (security) |
+| `docker-compose.yml` | Local Postgres/MinIO/ClamAV/Mailpit dev stack | shared |
+| `prisma/schema.prisma` | + MFA/recovery/approval/step-up models + production indexes | shared |
+| `tests/unit/{mode,eligibilityRuleSet}.test.ts`, `tests/integration/{killswitch,mfa-approvals,reconciliation}.test.ts` | New productionisation tests | test |
+| `docs/PRODUCTIONISATION_*`, `RELEASE_READINESS_MATRIX.md`, `EXTERNAL_BLOCKERS.md`, `ASVS_TRACEABILITY_MATRIX.md`, `ENVIRONMENT_AND_PROVIDER_MODE_MATRIX.md`, `PRODUCTION_ARCHITECTURE.md`, `ACCESS_CONTROL_MATRIX.md`, `OPERATIONAL_SLOS_AND_ALERTS.md`, `PILOT_PLAN.md`, `GO_LIVE_CHECKLIST.md`, `PENETRATION_TEST_SCOPE.md`, `PCI_RESPONSIBILITY_MATRIX.md`, `RESTORE_TEST_REPORT.md`, `PERFORMANCE_TEST_REPORT.md`, `TOM_PRODUCTION_READINESS_BRIEF.md`, `DATA_CLASSIFICATION_AND_MAP.md`, `DATA_RETENTION_AND_DELETION.md`, `SUBPROCESSOR_AND_OVERSEAS_PROCESSING_REGISTER.md`, `external-requests/*` | Productionisation + external-input docs | docs |
+
 ## Docs
-See `docs/` (architecture, workflow, integrations/*, security suite, privacy suite, deployment, runbook, demo script, test report, assumptions, real-integration checklist) and root `README.md`, `PROJECT_STATUS.md`, `CLAUDE.md`, `CHANGELOG.md`.
+See `docs/` (architecture, workflow, integrations/*, security suite, privacy suite, deployment, runbook, demo script, test report, assumptions, real-integration checklist, productionisation set) and root `README.md`, `PROJECT_STATUS.md`, `CLAUDE.md`, `CHANGELOG.md`.

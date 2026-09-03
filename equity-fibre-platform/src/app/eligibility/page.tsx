@@ -162,7 +162,7 @@ export default function EligibilityWizard() {
                 <div className="mt-4 flex gap-2">
                   <input className="input" value={query} placeholder="e.g. 12 Rimu Lane"
                     onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") doSearch(); }} />
+                    onKeyDown={(e) => { if (e.key === "Enter") void doSearch(); }} />
                   <button className="btn-primary" onClick={doSearch} disabled={query.trim().length < 3 || searching}>
                     {searching ? "Searching…" : "Search"}
                   </button>
@@ -232,7 +232,7 @@ export default function EligibilityWizard() {
                 <div className="mt-4 space-y-3">
                   <label className="flex items-start gap-3 rounded-xl border border-slate-200 p-3">
                     <input type="checkbox" checked={serviceConsent} onChange={(e) => setServiceConsent(e.target.checked)} className="mt-1" />
-                    <span className="text-sm text-ink-soft"><strong className="text-ink">Required.</strong> I consent to {`${cfg?.plan.name ?? "Equity Fibre"}`} collecting and using my information to assess eligibility and provide the service. (Policy v1.0-demo)</span>
+                    <span className="text-sm text-ink-soft"><strong className="text-ink">Required.</strong> I consent to {`${cfg?.plan.name ?? "Stride Broadband"}`} collecting and using my information to assess eligibility and provide the service. (Policy v1.0-demo)</span>
                   </label>
                   <label className="flex items-start gap-3 rounded-xl border border-slate-200 p-3">
                     <input type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} className="mt-1" />

@@ -9,22 +9,33 @@
  * Run:  npm run worker
  */
 import { processDueJobs } from "@/lib/services/provisioning";
+import { reconcileStuckJobs, reconcileStuckProvisioning } from "@/lib/services/reconciliation";
+import { expireHolds } from "@/lib/services/holds";
 import { logProviderStartup } from "@/lib/providers/factory";
 import { logger } from "@/lib/logger";
 
 const POLL_MS = Number(process.env.WORKER_POLL_MS ?? 3000);
+const RECONCILE_EVERY_TICKS = Number(process.env.WORKER_RECONCILE_TICKS ?? 20);
 
 async function loop() {
   logProviderStartup();
   logger.info("worker.started", { pollMs: POLL_MS });
+  let tick = 0;
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
       const result = await processDueJobs(20);
       if (result.processed > 0) logger.info("worker.tick", { ...result });
+      // Periodic reconciliation: recover crashed leases + flag stuck orders.
+      if (tick % RECONCILE_EVERY_TICKS === 0) {
+        await reconcileStuckJobs();
+        await reconcileStuckProvisioning();
+        await expireHolds();
+      }
     } catch (err) {
       logger.error("worker.error", { message: err instanceof Error ? err.message : String(err) });
     }
+    tick += 1;
     await new Promise((r) => setTimeout(r, POLL_MS));
   }
 }

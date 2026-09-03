@@ -38,6 +38,7 @@ model User {
   isStaff        Boolean         @default(false)
   passwordHash   String?
   mfaEnrolled    Boolean         @default(false)
+  mfaSecretEnc   String?         // encrypted TOTP secret (envelope-encrypted at rest)
   createdAt      DateTime        @default(now())
   disabledAt     DateTime?
 
@@ -47,6 +48,34 @@ model User {
   applications    EligibilityApplication[]
   conversations   SupportConversation[]
   notifications   CustomerNotification[]
+  recoveryCodes   MfaRecoveryCode[]
+  accountHolds    AccountHold[]
+  hardshipCases   HardshipCase[]
+  billingDisputes BillingDispute[]
+}
+
+model MfaRecoveryCode {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// Maker-checker approval for high-risk operations (PILOT/PRODUCTION).
+model ApprovalRequest {
+  id              String    @id @default(uuid())
+  type            String    // config_change | refund | rule_change | killswitch ...
+  payloadJson     String
+  status          String    @default("pending") // pending | approved | rejected | applied
+  reason          String
+  requestedById   String?
+  requestedByLabel String
+  approvedById    String?
+  approvedByLabel String?
+  createdAt       DateTime  @default(now())
+  decidedAt       DateTime?
 }
 
 model CustomerProfile {
@@ -78,6 +107,7 @@ model Session {
   expiresAt  DateTime
   lastSeenAt DateTime @default(now())
   ip         String?
+  stepUpUntil DateTime? // short-lived elevation for sensitive operations
 }
 
 // ---------------------------------------------------------------------------
@@ -147,6 +177,10 @@ model EligibilityApplication {
   decisions      EligibilityDecision[]
   consents       ConsentRecord[]
   serviceOrder   ServiceOrder?
+
+  @@index([status])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model EligibilityRuleResult {
@@ -234,6 +268,105 @@ model ServiceOrder {
   subscription   Subscription?
   transactions   PaymentTransaction[]
   externalRefs   ExternalOrderReference[]
+  holds          AccountHold[]
+  suspensionDecisions SuspensionDecision[]
+  hardshipCases  HardshipCase[]
+  billingDisputes BillingDispute[]
+
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Hardship, dispute & suspension safety (Phase 3)
+// ---------------------------------------------------------------------------
+
+// A hold that can BLOCK automatic suspension while active and unexpired.
+model AccountHold {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  serviceOrderId String?
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id])
+  holdType       String   // see src/lib/domain/holds.ts HOLD_TYPES
+  reason         String
+  createdById    String?
+  createdByLabel String
+  startAt        DateTime @default(now())
+  expiresAt      DateTime?
+  active         Boolean  @default(true)
+  reviewDate     DateTime?
+  note           String?
+  approvedById   String?
+  approvedByLabel String?
+  closedAt       DateTime?
+  closureReason  String?
+  createdAt      DateTime @default(now())
+  history        HoldHistory[]
+
+  @@index([userId, active])
+  @@index([serviceOrderId, active])
+  @@index([active, expiresAt])
+}
+
+model HoldHistory {
+  id        String   @id @default(uuid())
+  holdId    String
+  hold      AccountHold @relation(fields: [holdId], references: [id])
+  event     String   // created | approved | expired | closed | reactivated
+  detail    String
+  actorLabel String
+  createdAt DateTime @default(now())
+}
+
+model HardshipCase {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  serviceOrderId String?
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id])
+  reference      String   @unique
+  status         String   @default("open") // open | in_progress | resolved | declined
+  reason         String
+  detail         String?
+  assignedToId   String?
+  holdId         String?  // linked protective AccountHold
+  createdAt      DateTime @default(now())
+  resolvedAt     DateTime?
+
+  @@index([status])
+}
+
+model BillingDispute {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  serviceOrderId String?
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id])
+  transactionId  String?
+  reference      String   @unique
+  status         String   @default("open") // open | investigating | upheld | rejected | resolved
+  reason         String
+  amountCents    Int?
+  holdId         String?
+  createdAt      DateTime @default(now())
+  resolvedAt     DateTime?
+
+  @@index([status])
+}
+
+// Immutable record of every suspension evaluation (suspended/blocked/skipped).
+model SuspensionDecision {
+  id             String   @id @default(uuid())
+  serviceOrderId String
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  outcome        String   // suspended | blocked | skipped | manual_review
+  reason         String
+  blockingHoldId String?
+  trigger        String   // e.g. monthly_payment_failed
+  decidedByLabel String
+  createdAt      DateTime @default(now())
+
+  @@index([serviceOrderId])
 }
 
 model ExternalOrderReference {
@@ -283,6 +416,10 @@ model IntegrationJob {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   attemptLog    IntegrationAttempt[]
+
+  // Due-job polling index (status + nextRunAt). On PostgreSQL the worker also
+  // uses SELECT ... FOR UPDATE SKIP LOCKED (see docs/PRODUCTION_ARCHITECTURE.md).
+  @@index([status, nextRunAt])
 }
 
 model IntegrationAttempt {
@@ -333,6 +470,8 @@ model ModemDevice {
   receivedAt    DateTime @default(now())
   faultState    String?  // null | faulty | lost
   assignment    ModemAssignment?
+
+  @@index([status])
 }
 
 model ModemAssignment {
@@ -492,6 +631,10 @@ model AuditEvent {
   reason        String?
   metadataJson  String   @default("{}") // safe metadata only (no PII/secrets)
   createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type])
+  @@index([targetType, targetId])
 }
 
 model SecurityEvent {

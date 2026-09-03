@@ -9,7 +9,7 @@ export async function SiteHeader() {
       <div className="container-page flex h-16 items-center justify-between">
         <Wordmark />
         <nav className="hidden items-center gap-6 text-sm font-medium text-ink-soft sm:flex">
-          <Link href="/#how" className="hover:text-ink">How it works</Link>
+          <Link href="/how-it-works" className="hover:text-ink">How it works</Link>
           <Link href="/#faq" className="hover:text-ink">FAQ</Link>
           <Link href="/support" className="hover:text-ink">Support</Link>
         </nav>

@@ -16,7 +16,7 @@ interface Msg {
 const SUGGESTIONS = [
   "How do I connect my modem to the ONT?",
   "What does the ONT alarm light mean?",
-  "How much does Equity Fibre cost?",
+  "How much does Stride Broadband cost?",
   "Why is my address not eligible?",
 ];
 
@@ -29,7 +29,7 @@ const QUICK_TOOLS = [
 
 export default function SupportPage() {
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", content: "Kia ora! I'm the Equity Fibre assistant. Ask me about eligibility, your modem setup, payments, or your account. If I can't help, I'll get a person for you." },
+    { role: "assistant", content: "Kia ora! I'm the Stride Broadband assistant. Ask me about eligibility, your modem setup, payments, or your account. If I can't help, I'll get a person for you." },
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -129,7 +129,7 @@ export default function SupportPage() {
               <div className="flex gap-2">
                 <input className="input" value={input} placeholder="Type your question…"
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") ask(input); }} />
+                  onKeyDown={(e) => { if (e.key === "Enter") void ask(input); }} />
                 <button className="btn-primary" onClick={() => ask(input)} disabled={busy || !input.trim()}>Send</button>
               </div>
             </div>

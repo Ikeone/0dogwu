@@ -76,7 +76,7 @@ export class ChorusHttpClient {
     body?: unknown,
   ): Promise<T> {
     const env = getEnv();
-    const path = CHORUS_ENDPOINTS[endpointKey as string];
+    const path = CHORUS_ENDPOINTS[endpointKey];
     if (!env.CHORUS_BASE_URL || !path) {
       throw new Error(
         `Chorus endpoint '${String(endpointKey)}' is not mapped yet. See docs/integrations/chorus.md.`,

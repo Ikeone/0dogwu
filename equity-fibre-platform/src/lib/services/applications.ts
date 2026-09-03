@@ -10,9 +10,12 @@ import {
   type ApplicationState,
 } from "@/lib/domain/applicationState";
 import {
-  evaluateEligibility,
-  type EligibilityInput,
-} from "@/lib/domain/eligibility";
+  evaluateRuleSet,
+  ruleSetFromConfig,
+  type RuleSetInput,
+  type VerificationPath,
+} from "@/lib/domain/eligibilityRuleSet";
+import { getEnv } from "@/lib/config/env";
 import type {
   EvidenceType,
   HousingCategory,
@@ -22,6 +25,7 @@ import { getAddressProvider } from "@/lib/providers/factory";
 import { recordAudit } from "./audit";
 import { humanRef } from "@/lib/ids";
 import { createServiceOrderForApplication } from "./orders";
+import { assertWorkflowEnabled } from "./killSwitch";
 
 export interface SubmitApplicationInput {
   userId?: string | null;
@@ -31,6 +35,7 @@ export interface SubmitApplicationInput {
   city: string;
   postcode: string;
   housingCategory: HousingCategory;
+  schoolEquityIndex?: number | null;
   evidenceType: EvidenceType;
   evidenceProvided: boolean;
   contactName: string;
@@ -66,6 +71,7 @@ export async function transitionApplication(
 }
 
 export async function submitApplication(input: SubmitApplicationInput) {
+  await assertWorkflowEnabled("accept_applications");
   const cfg = await getBusinessConfig();
   if (!input.serviceConsent) {
     throw new Error("Service consent is required to submit an application.");
@@ -134,37 +140,45 @@ export async function submitApplication(input: SubmitApplicationInput) {
   // Evaluate deterministic eligibility.
   await transitionApplication(app.id, "CHECKING", "system", "Automatic eligibility check");
 
-  const evalInput: EligibilityInput = {
+  // Versioned rule set evaluation. The verification path is derived from the
+  // configured evidence-verification mode; in DEMO/SANDBOX an authoritative
+  // (mock) provider result is used, so we never rely on OCR/AI to decide.
+  const ruleset = ruleSetFromConfig(cfg.eligibility);
+  const verificationPath: VerificationPath =
+    (getEnv().EVIDENCE_VERIFICATION_MODE?.toUpperCase() as VerificationPath) &&
+    ["AUTHORITATIVE_API", "PREQUALIFIED_TOKEN", "PARTNER_ATTESTATION", "MANUAL_DOCUMENT_REVIEW"].includes(
+      (getEnv().EVIDENCE_VERIFICATION_MODE ?? "").toUpperCase(),
+    )
+      ? (getEnv().EVIDENCE_VERIFICATION_MODE!.toUpperCase() as VerificationPath)
+      : "AUTHORITATIVE_API";
+
+  // Derive the authoritative site result from the (mock) provider for the
+  // installation/inactivity criteria. Indeterminate => manual review.
+  const authoritativeResult = site.indeterminate
+    ? undefined
+    : !site.hasOnt
+      ? ("ineligible" as const)
+      : site.daysSinceLastActive !== null && site.daysSinceLastActive < ruleset.inactivity.days
+        ? ("ineligible" as const)
+        : ("eligible" as const);
+
+  const evalInput: RuleSetInput = {
+    verificationPath,
+    authoritativeResult:
+      verificationPath === "AUTHORITATIVE_API" || verificationPath === "PREQUALIFIED_TOKEN"
+        ? authoritativeResult
+        : undefined,
     ontInstalled: site.hasOnt,
     daysSinceLastActive: site.daysSinceLastActive,
     providerConflict: site.indeterminate,
     housingCategory: input.housingCategory,
+    schoolEquityIndex: input.schoolEquityIndex ?? null,
     evidenceType: input.evidenceType,
     evidenceProvided: input.evidenceProvided,
   };
-  const decision = evaluateEligibility(evalInput, cfg);
+  const decision = evaluateRuleSet(evalInput, ruleset);
 
-  // Persist rule results + decision.
-  await prisma.eligibilityRuleResult.createMany({
-    data: decision.results.map((r) => ({
-      applicationId: app.id,
-      ruleCode: r.ruleCode,
-      ruleVersion: decision.ruleVersion,
-      outcome: r.outcome,
-      reason: r.reason,
-      inputsJson: JSON.stringify(evalInput),
-    })),
-  });
-  await prisma.eligibilityDecision.create({
-    data: {
-      applicationId: app.id,
-      outcome: decision.outcome,
-      automatic: decision.automatic,
-      reason: decision.reason,
-      ruleVersion: decision.ruleVersion,
-    },
-  });
-
+  // Map the rule-set outcome to the application state vocabulary.
   const target: ApplicationState =
     decision.outcome === "ELIGIBLE"
       ? "ELIGIBLE"
@@ -173,6 +187,27 @@ export async function submitApplication(input: SubmitApplicationInput) {
         : decision.outcome === "NEEDS_INFORMATION"
           ? "NEEDS_INFORMATION"
           : "MANUAL_REVIEW";
+
+  // Persist rule results + decision, including the exact rule-set version + inputs.
+  await prisma.eligibilityRuleResult.createMany({
+    data: decision.results.map((r) => ({
+      applicationId: app.id,
+      ruleCode: r.code,
+      ruleVersion: decision.ruleSetVersion,
+      outcome: r.outcome,
+      reason: r.reason,
+      inputsJson: JSON.stringify(evalInput),
+    })),
+  });
+  await prisma.eligibilityDecision.create({
+    data: {
+      applicationId: app.id,
+      outcome: target,
+      automatic: decision.automatic,
+      reason: decision.reason,
+      ruleVersion: decision.ruleSetVersion,
+    },
+  });
 
   await transitionApplication(app.id, target, "system", decision.reason);
   await recordAudit({

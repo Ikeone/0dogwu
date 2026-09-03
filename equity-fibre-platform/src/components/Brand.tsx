@@ -5,7 +5,7 @@ import { BRAND } from "@/lib/config/brand";
 export function Wordmark({ href = "/" }: { href?: string }) {
   return (
     <Link href={href} className="inline-flex items-center gap-2 font-bold text-ink">
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">EF</span>
+      <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">SB</span>
       <span className="text-lg tracking-tight">{BRAND.wordmark}</span>
     </Link>
   );

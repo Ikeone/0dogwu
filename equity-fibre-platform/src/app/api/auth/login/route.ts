@@ -20,7 +20,8 @@ export async function POST(req: Request) {
   const generic = NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
   if (!parsed.success) return generic;
 
-  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  const email = parsed.data.email.trim().toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.passwordHash || user.disabledAt) return generic;
   if (!verifyPassword(parsed.data.password, user.passwordHash)) {
     await recordAudit({ type: "auth.login_failed", actorLabel: "anonymous", metadata: { reason: "bad_password" } });
